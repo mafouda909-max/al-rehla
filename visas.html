@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="قارن عروض التأشيرات في الرحلة حسب الدولة ونوع التأشيرة ومدة التنفيذ مع توضيح أن القبول النهائي من الجهة المختصة.">
+  <title>عروض التأشيرات | الرحلة</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="visas">
+  <header class="topbar" data-site-header></header>
+
+  <main>
+    <section class="page-hero">
+      <div class="container page-hero-shell">
+        <div>
+          <span class="badge">تأشيرات وخدمات سفر</span>
+          <h1>قارن عروض التأشيرات بوضوح قبل البدء</h1>
+          <p>تعرض هذه الصفحة الدولة ونوع الخدمة ومدة التنفيذ وما يشمله العرض، مع تنبيه مهم أن قبول التأشيرة النهائي يظل بيد الجهة المختصة.</p>
+        </div>
+        <div class="panel-card">
+          <h3>تنبيه أساسي</h3>
+          <p>المنصة توضح العروض وتسهّل المقارنة فقط. لا توجد وعود قبول نهائي، بل مراجعة أوضح وطلب تفاصيل أو متابعة من الوكيل.</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section compact-section">
+      <div class="container filter-shell">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">فلترة سريعة</h2>
+            <p class="section-sub">اختر الدولة أو نوع التأشيرة أو مدة التنفيذ للوصول إلى أقرب عرض مناسب.</p>
+          </div>
+          <span class="pill orange" data-results-count>0 نتيجة</span>
+        </div>
+
+        <form class="filters" data-filter-form>
+          <div class="field">
+            <label>الدولة</label>
+            <input class="input" name="country" placeholder="الإمارات">
+          </div>
+          <div class="field">
+            <label>نوع التأشيرة</label>
+            <input class="input" name="visa" placeholder="زيارة / سياحة">
+          </div>
+          <div class="field">
+            <label>مدة التنفيذ</label>
+            <select name="duration">
+              <option value="">أي مدة</option>
+              <option value="2 - 5">2 - 5 أيام عمل</option>
+              <option value="3 - 6">3 - 6 أيام عمل</option>
+              <option value="3 - 7">3 - 7 أيام عمل</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>ترتيب السعر</label>
+            <select name="sort">
+              <option value="">الأقل سعرًا أولًا</option>
+              <option value="high">الأعلى سعرًا أولًا</option>
+              <option value="updated">الأحدث تحديثًا</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" type="submit">طبّق الفلترة</button>
+        </form>
+
+        <div class="notice" style="margin-top:16px">القبول النهائي للتأشيرة حسب شروط الجهة المختصة. اطلب التفاصيل الكاملة من الوكيل قبل البدء في الإجراءات.</div>
+        <div class="filters-meta" data-filter-meta></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">النتائج المتاحة</h2>
+            <p class="section-sub">كل بطاقة توضح السعر المبدئي، مدة التنفيذ، والوكيل المسؤول عن المتابعة.</p>
+          </div>
+          <a class="btn btn-soft" href="request.html?service=visa">اطلب عرضًا خاصًا</a>
+        </div>
+
+        <div class="cards-grid" data-offers-grid></div>
+        <div class="hidden" data-empty-state>
+          <div class="empty-state">
+            <h3>لا توجد نتائج مطابقة حاليًا</h3>
+            <p>عدّل الفلاتر أو أنشئ طلبًا خاصًا ليظهر للوكلاء المتخصصين في الدولة أو الخدمة المطلوبة.</p>
+            <div class="card-actions" style="justify-content:center;margin-top:16px">
+              <a class="btn btn-primary" href="request.html?service=visa">اطلب عرضًا خاصًا</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" data-site-footer></footer>
+
+  <script src="data/offers.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="قارن عروض تذاكر الطيران في الرحلة حسب الوجهة والدولة والسعر مع توضيح أن السعر يبدأ من ويتغير حسب التوافر.">
+  <title>عروض التذاكر | الرحلة</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="tickets">
+  <header class="topbar" data-site-header></header>
+
+  <main>
+    <section class="page-hero">
+      <div class="container page-hero-shell">
+        <div>
+          <span class="badge">تذاكر طيران قابلة للمقارنة</span>
+          <h1>اعثر على أقرب عرض مناسب لرحلتك</h1>
+          <p>صفحة مصممة لتسهيل المقارنة السريعة بين عروض التذاكر مع فلترة بسيطة ورسالة واضحة: الأسعار تبدأ من ويجب تأكيدها قبل الحجز.</p>
+        </div>
+        <div class="panel-card">
+          <h3>ماذا يظهر هنا؟</h3>
+          <ul class="admin-list">
+            <li>خط الرحلة أو الدولة المطلوبة</li>
+            <li>ما يشمله العرض من أمتعة أو مميزات</li>
+            <li>اسم الوكيل وتقييمه</li>
+            <li>زر واضح لطلب تأكيد السعر</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="section compact-section">
+      <div class="container filter-shell">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">فلترة سريعة</h2>
+            <p class="section-sub">اكتب ما تعرفه فقط، وستتقلص النتائج مباشرة إلى أقرب عروض مطابقة.</p>
+          </div>
+          <span class="pill orange" data-results-count>0 نتيجة</span>
+        </div>
+
+        <form class="filters" data-filter-form>
+          <div class="field">
+            <label>من</label>
+            <input class="input" name="from" placeholder="القاهرة">
+          </div>
+          <div class="field">
+            <label>إلى</label>
+            <input class="input" name="to" placeholder="الرياض">
+          </div>
+          <div class="field">
+            <label>الدولة</label>
+            <input class="input" name="country" placeholder="السعودية">
+          </div>
+          <div class="field">
+            <label>ترتيب السعر</label>
+            <select name="sort">
+              <option value="">الأقل سعرًا أولًا</option>
+              <option value="high">الأعلى سعرًا أولًا</option>
+              <option value="updated">الأحدث تحديثًا</option>
+            </select>
+          </div>
+          <button class="btn btn-primary" type="submit">طبّق الفلترة</button>
+        </form>
+
+        <div class="notice" style="margin-top:16px">كل الأسعار المعروضة تبدأ من وقد تتغير حسب شركة الطيران والتوافر الفعلي. اطلب تأكيد السعر قبل الحجز أو الدفع.</div>
+        <div class="filters-meta" data-filter-meta></div>
+      </div>
+    </section>
+
+    <section class="section">
+      <div class="container">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">النتائج المتاحة</h2>
+            <p class="section-sub">بطاقات مختصرة تساعد العميل على اتخاذ قرار أسرع وتُبرز دور الوكيل بوضوح.</p>
+          </div>
+          <a class="btn btn-soft" href="request.html?service=ticket">لم تجد المناسب؟ اطلب عرضًا خاصًا</a>
+        </div>
+
+        <div class="cards-grid" data-offers-grid></div>
+        <div class="hidden" data-empty-state>
+          <div class="empty-state">
+            <h3>لا توجد نتائج مطابقة حاليًا</h3>
+            <p>جرّب تغيير الدولة أو خط الرحلة، أو أنشئ طلبًا خاصًا ليظهر للوكلاء المناسبين.</p>
+            <div class="card-actions" style="justify-content:center;margin-top:16px">
+              <a class="btn btn-primary" href="request.html?service=ticket">اطلب عرضًا خاصًا</a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer" data-site-footer></footer>
+
+  <script src="data/offers.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>
