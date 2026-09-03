@@ -18,21 +18,27 @@ export async function createContactRequest(
   input: ContactRequestCreateInput,
   opts: { travelerAccountId?: string | null },
 ) {
+  if (!input.offerId && !input.agentId) {
+    throw new HttpError(400, 'target_required', 'A target offer or agent is required');
+  }
+
   let agentId = input.agentId;
   const linkedOfferId = input.offerId ?? null;
-  let targetAgent;
 
   if (input.offerId) {
     const offer = await getPublicOffer(input.offerId);
     if (!offer) {
       throw new HttpError(400, 'offer_not_published', 'The referenced offer is not available');
     }
+    // Authoritative: the lead goes to the offer's owning agent, never a
+    // client-supplied agentId.
     agentId = offer.agentId;
-    targetAgent = await getVerifiedAgent(agentId);
-  } else {
-    targetAgent = await getVerifiedAgent(agentId);
+  } else if (!agentId) {
+    // Unreachable given the guard above, but narrows the type for TS.
+    throw new HttpError(400, 'target_required', 'A target offer or agent is required');
   }
 
+  const targetAgent = await getVerifiedAgent(agentId);
   if (!targetAgent) {
     throw new HttpError(400, 'agent_not_verified', 'The target agent is not available');
   }

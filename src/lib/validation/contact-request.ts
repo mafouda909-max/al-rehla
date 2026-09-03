@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 export const contactRequestCreateSchema = z.object({
   offerId: z.string().uuid().optional(),
-  agentId: z.string().uuid(),
+  agentId: z.string().uuid().optional(),
   name: z.string().trim().min(1).max(120),
   email: z.string().email().max(255),
   phone: z.string().trim().min(5).max(40),

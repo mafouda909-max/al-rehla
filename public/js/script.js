@@ -272,6 +272,14 @@ function renderRequestPage() {
   markActiveRequestTab(preferredService);
   updateRequestFormCopy(preferredService);
 
+  // Prefill the hidden lead-target fields from the query string.
+  // offerId (from ?offer=) lets the server authoritatively resolve the agent;
+  // agentId (from ?agent=) targets a specific agent when there is no offer.
+  const offerIdInput = document.querySelector('[name="offerId"]');
+  const agentIdInput = document.querySelector('[name="agentId"]');
+  if (offerIdInput) offerIdInput.value = search.offer || '';
+  if (agentIdInput) agentIdInput.value = search.agent || '';
+
   const selectedOffer = document.querySelector('[data-selected-offer]');
   if (selectedOffer) {
     if (offer) {
@@ -537,24 +545,17 @@ async function apiJson(path, options = {}) {
   return { ok: res.ok, status: res.status, data };
 }
 
-function setupApiForms() {
-  const form = document.querySelector('[data-api-form="join-agent"]');
-  if (!form) return;
-  const feedback = form.querySelector('[data-form-feedback]');
-
-  form.addEventListener('submit', async (event) => {
-    event.preventDefault();
-    const fd = new FormData(form);
-    const submitBtn = form.querySelector('button[type="submit"]');
-
-    if (feedback) {
-      feedback.classList.remove('visible');
-      feedback.textContent = '';
-    }
-    if (submitBtn) submitBtn.disabled = true;
-
-    try {
-      const payload = {
+/**
+ * Real backend form bindings. Each kind maps to a config with an endpoint,
+ * a payload builder, an optional client-side validator, and success handling.
+ * Errors surface cleanly; an unreachable/down database shows a friendly
+ * message instead of pretending the request was persisted.
+ */
+const apiFormConfig = {
+  'join-agent': {
+    endpoint: '/api/auth/register',
+    build(fd) {
+      return {
         email: (fd.get('email') || '').trim(),
         password: fd.get('password') || '',
         displayName: (fd.get('displayName') || '').trim(),
@@ -567,28 +568,118 @@ function setupApiForms() {
           bio: (fd.get('bio') || '').trim() || undefined,
         },
       };
+    },
+    successMessage: 'تم إنشاء حساب الوكيل بنجاح. يمكنك الآن إكمال ملفك وإضافة عروضك.',
+    redirect: 'agent.html',
+    afterReset() {},
+  },
+  'contact-request': {
+    endpoint: '/api/contacts',
+    build(fd) {
+      const service = (fd.get('serviceType') || '').trim();
+      const destination = (fd.get('destination') || '').trim();
+      const routeOrType = (fd.get('routeOrType') || '').trim();
+      const travelers = (fd.get('travelers') || '').trim();
+      const date = (fd.get('date') || '').trim();
+      const priority = (fd.get('priority') || '').trim();
+      const notes = (fd.get('notes') || '').trim();
 
-      const result = await apiJson('/api/auth/register', { method: 'POST', body: payload });
+      let message = `طلب ${destination || 'خدمة سفر'}`;
+      if (routeOrType) message += ` (${routeOrType})`;
+      if (service) message += ` — نوع الخدمة: ${service}`;
+      if (travelers) message += ` — المسافرون: ${travelers}`;
+      if (date) message += ` — التاريخ: ${date}`;
+      if (priority) message += ` — الأولوية: ${priority}`;
+      if (notes) message += `\n${notes}`;
 
-      if (result.ok) {
+      return {
+        offerId: (fd.get('offerId') || '').trim() || undefined,
+        agentId: (fd.get('agentId') || '').trim() || undefined,
+        name: (fd.get('name') || '').trim(),
+        email: (fd.get('email') || '').trim(),
+        phone: (fd.get('phone') || '').trim(),
+        message: message.trim(),
+      };
+    },
+    validate(body) {
+      if (!body.offerId && !body.agentId) {
+        return {
+          ok: false,
+          message: 'الرجاء اختيار عرض أو وكيل أولًا (ابدأ من صفحة العروض).',
+        };
+      }
+      if (!body.name || !body.email || !body.phone) {
+        return { ok: false, message: 'الرجاء إكمال الاسم والبريد ورقم الواتساب.' };
+      }
+      return { ok: true };
+    },
+    successMessage: 'تم استلام طلبك بنجاح. سيتواصل معك الوكيل لتأكيد التفاصيل والسعر.',
+    afterReset() {
+      const serviceField = document.querySelector('[name="serviceType"]');
+      if (serviceField) serviceField.value = 'ticket';
+      markActiveRequestTab('ticket');
+      updateRequestFormCopy('ticket');
+    },
+  },
+};
+
+function setupApiForms() {
+  document.querySelectorAll('[data-api-form]').forEach((form) => {
+    const kind = form.dataset.apiForm;
+    const config = apiFormConfig[kind];
+    if (!config) return;
+
+    const feedback = form.querySelector('[data-form-feedback]');
+
+    form.addEventListener('submit', async (event) => {
+      event.preventDefault();
+      const fd = new FormData(form);
+      const submitBtn = form.querySelector('button[type="submit"]');
+
+      if (feedback) {
+        feedback.classList.remove('visible');
+        feedback.textContent = '';
+      }
+      if (config.validate) {
+        const bodyPreview = config.build(fd);
+        const validation = config.validate(bodyPreview);
+        if (!validation.ok) {
+          if (feedback) {
+            feedback.textContent = validation.message;
+            feedback.classList.add('visible');
+          }
+          return;
+        }
+      }
+      if (submitBtn) submitBtn.disabled = true;
+
+      try {
+        const body = config.build(fd);
+        const result = await apiJson(config.endpoint, { method: 'POST', body });
+
+        if (result.ok) {
+          if (feedback) {
+            feedback.textContent = config.successMessage;
+            feedback.classList.add('visible');
+          }
+          form.reset();
+          if (config.afterReset) config.afterReset();
+          if (config.redirect) {
+            window.setTimeout(() => { window.location.href = config.redirect; }, 1200);
+          }
+        } else {
+          const message = result.data?.error?.message || 'حدث خطأ، حاول مرة أخرى.';
+          if (feedback) { feedback.textContent = message; feedback.classList.add('visible'); }
+        }
+      } catch (e) {
         if (feedback) {
-          feedback.textContent = 'تم إنشاء حساب الوكيل بنجاح. يمكنك الآن إكمال ملفك وإضافة عروضك.';
+          feedback.textContent = 'تعذر الاتصال بالخادم. تأكد من إعداد قاعدة البيانات.';
           feedback.classList.add('visible');
         }
-        form.reset();
-        window.setTimeout(() => { window.location.href = 'agent.html'; }, 1200);
-      } else {
-        const message = result.data?.error?.message || 'حدث خطأ، حاول مرة أخرى.';
-        if (feedback) { feedback.textContent = message; feedback.classList.add('visible'); }
+      } finally {
+        if (submitBtn) submitBtn.disabled = false;
       }
-    } catch (e) {
-      if (feedback) {
-        feedback.textContent = 'تعذر الاتصال بالخادم. تأكد من إعداد قاعدة البيانات.';
-        feedback.classList.add('visible');
-      }
-    } finally {
-      if (submitBtn) submitBtn.disabled = false;
-    }
+    });
   });
 }
 

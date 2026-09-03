@@ -20,7 +20,7 @@
         </div>
         <div class="panel-card">
           <h3>ماذا يحدث بعد الإرسال؟</h3>
-          <p>في نسخة العرض الحالية ستظهر رسالة نجاح فقط. الفكرة المعروضة هي أن الطلب يمر إلى الوكلاء المناسبين ثم يعودون للعميل بتأكيد وتفاصيل.</p>
+          <p>يُرسل طلبك إلى الوكيل المناسب، ويتواصل معك لتأكيد التفاصيل والسعر قبل أي التزام.</p>
         </div>
       </div>
     </section>
@@ -34,7 +34,7 @@
     <section class="section">
       <div class="container split-layout">
         <div>
-          <form class="form-card" data-demo-form="request">
+          <form class="form-card" data-api-form="contact-request" id="contactRequestForm">
             <div class="section-head">
               <div>
                 <h2 class="section-title">نوع الخدمة</h2>
@@ -49,8 +49,18 @@
             </div>
 
             <input type="hidden" name="serviceType" value="ticket">
+            <input type="hidden" name="offerId" value="">
+            <input type="hidden" name="agentId" value="">
 
             <div class="form-grid">
+              <div class="field full">
+                <label>الاسم</label>
+                <input class="input" name="name" required placeholder="اسمك">
+              </div>
+              <div class="field full">
+                <label>البريد الإلكتروني</label>
+                <input class="input" type="email" name="email" required placeholder="you@example.com">
+              </div>
               <div class="field">
                 <label data-destination-label>الوجهة</label>
                 <input class="input" name="destination" required placeholder="الرياض / جدة / دبي">
@@ -83,12 +93,12 @@
               <div class="field full">
                 <label>تفاصيل إضافية</label>
                 <textarea name="notes" placeholder="مثال: أبحث عن أقل سعر مع حقيبة 23 كجم أو رحلة مباشرة إن أمكن."></textarea>
-                <div class="field-note">النموذج لا يرسل بيانات حقيقية الآن، بل يعرض رسالة نجاح فقط ضمن النسخة التجريبية.</div>
+                <div class="field-note">سيتواصل معك الوكيل لتأكيد السعر والتفاصيل قبل أي التزام.</div>
               </div>
             </div>
 
             <button class="btn btn-primary" type="submit" style="margin-top:18px;width:100%">إرسال الطلب</button>
-            <div class="success-message" style="margin-top:16px"></div>
+            <div class="success-message" data-form-feedback style="margin-top:16px"></div>
           </form>
         </div>
 

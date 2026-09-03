@@ -70,13 +70,24 @@ describe('offer validation', () => {
 });
 
 describe('contact request validation', () => {
-  it('accepts a valid contact request', () => {
+  it('accepts a valid contact request with a target agent', () => {
     const res = contactRequestCreateSchema.safeParse({
       agentId: '22222222-2222-2222-2222-222222222222',
       name: 'أحمد',
       email: 'ahmed@example.com',
       phone: '01000000000',
       message: 'أبحث عن تذكرة',
+    });
+    expect(res.success).toBe(true);
+  });
+
+  it('accepts a contact request via offerId without agentId (server derives agent)', () => {
+    const res = contactRequestCreateSchema.safeParse({
+      offerId: '33333333-3333-3333-3333-333333333333',
+      name: 'سمير',
+      email: 'samir@example.com',
+      phone: '01000000000',
+      message: 'أريد تأكيد السعر',
     });
     expect(res.success).toBe(true);
   });
