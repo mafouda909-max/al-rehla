@@ -23,6 +23,8 @@ export const offerCreateSchema = z.object({
     .transform((s) => s.toUpperCase()),
   priceType: z.enum(offerPriceTypeValues).default('starting_from'),
   pricingBasis: z.string().trim().max(120).optional(),
+  includes: z.string().trim().max(2000).optional(),
+  excludes: z.string().trim().max(2000).optional(),
   validFrom: z.string().datetime().optional(),
   validUntil: z.string().datetime().optional(),
 });

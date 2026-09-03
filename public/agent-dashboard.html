@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="لوحة الوكيل في الرحلة: تسجيل الدخول، إنشاء العروض، إرسالها للمراجعة، ونشرها بعد الموافقة.">
+  <title>لوحة الوكيل | الرحلة</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body data-page="agent-dashboard">
+  <header class="topbar" data-site-header></header>
+
+  <main class="container admin-shell">
+    <aside class="sidebar">
+      <a class="active" href="#overview">نظرة عامة</a>
+      <a href="#create">إنشاء عرض</a>
+      <a href="#offers">عروضي</a>
+    </aside>
+
+    <section id="overview">
+      <div class="section-head">
+        <div>
+          <h1 class="section-title">لوحة الوكيل</h1>
+          <p class="section-sub">سجّل الدخول ثم أنشئ عروضك وأرسلها للمراجعة وانشرها بعد موافقة الإدارة.</p>
+        </div>
+        <a class="btn btn-outline" href="index.html">العودة للموقع</a>
+      </div>
+
+      <!-- Login form -->
+      <div class="panel-card" id="loginPanel" style="margin-bottom:24px">
+        <h3>تسجيل الدخول</h3>
+        <form class="form-card" data-api-form="login">
+          <div class="form-grid">
+            <div class="field">
+              <label>البريد الإلكتروني</label>
+              <input class="input" type="email" name="email" required placeholder="agent@thejourney.local">
+            </div>
+            <div class="field">
+              <label>كلمة المرور</label>
+              <input class="input" type="password" name="password" required placeholder="كلمة المرور">
+            </div>
+          </div>
+          <button class="btn btn-primary" type="submit" style="margin-top:14px">تسجيل الدخول</button>
+          <div class="success-message" data-form-feedback style="margin-top:14px"></div>
+        </form>
+      </div>
+
+      <!-- Create offer form -->
+      <section class="section" id="create">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">إنشاء عرض جديد</h2>
+            <p class="section-sub">بعد الإرسال يظهر العرض كمسودة، ثم ترسله للمراجعة.</p>
+          </div>
+        </div>
+        <form class="form-card" data-api-form="offer-create" id="offerCreateForm">
+          <div class="form-grid">
+            <div class="field full">
+              <label>عنوان العرض</label>
+              <input class="input" name="title" required placeholder="القاهرة إلى الرياض">
+            </div>
+            <div class="field full">
+              <label>الوصف</label>
+              <textarea name="description" placeholder="تفاصيل الخدمة."></textarea>
+            </div>
+            <div class="field">
+              <label>نوع الخدمة</label>
+              <select name="tripType" required>
+                <option value="ticket">تذكرة</option>
+                <option value="visa">تأشيرة</option>
+                <option value="procedure">إجراءات سفر</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>من</label>
+              <input class="input" name="originCity" placeholder="القاهرة">
+            </div>
+            <div class="field">
+              <label>إلى</label>
+              <input class="input" name="destinationCity" placeholder="الرياض">
+            </div>
+            <div class="field">
+              <label>الدولة</label>
+              <input class="input" name="destinationCountry" placeholder="السعودية">
+            </div>
+            <div class="field">
+              <label>السعر</label>
+              <input class="input" name="priceAmount" required placeholder="8450.00">
+            </div>
+            <div class="field">
+              <label>العملة</label>
+              <input class="input" name="currency" maxlength="3" value="EGP" required>
+            </div>
+            <div class="field">
+              <label>نوع السعر</label>
+              <select name="priceType">
+                <option value="starting_from">يبدأ من</option>
+                <option value="fixed">سعر ثابت</option>
+                <option value="negotiable">قابل للتفاوض</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>أساس التسعير</label>
+              <input class="input" name="pricingBasis" placeholder="حقيبة 23 كجم">
+            </div>
+            <div class="field">
+              <label>صالح من</label>
+              <input class="input" name="validFrom" type="datetime-local">
+            </div>
+            <div class="field">
+              <label>صالح حتى</label>
+              <input class="input" name="validUntil" type="datetime-local">
+            </div>
+            <div class="field full">
+              <label>ما يشمله العرض</label>
+              <input class="input" name="includes" placeholder="حقيبة 23 كجم + حقيبة يد">
+            </div>
+            <div class="field full">
+              <label>غير شامل</label>
+              <input class="input" name="excludes" placeholder="رسوم إضافية على التغيير">
+            </div>
+          </div>
+          <button class="btn btn-primary" type="submit" style="margin-top:18px;width:100%">حفظ العرض (مسودة)</button>
+          <div class="success-message" data-form-feedback style="margin-top:16px"></div>
+        </form>
+      </section>
+
+      <!-- Own offers -->
+      <section class="section" id="offers">
+        <div class="section-head">
+          <div>
+            <h2 class="section-title">عروضي</h2>
+            <p class="section-sub">أرسل للمراجعة، ثم انشر بعد موافقة الإدارة.</p>
+          </div>
+          <button class="btn btn-soft" type="button" data-refresh-own-offers>تحديث</button>
+        </div>
+        <div class="cards-grid" data-own-offers></div>
+      </section>
+    </section>
+  </main>
+
+  <footer class="footer" data-site-footer></footer>
+
+  <script src="data/offers.js"></script>
+  <script src="js/script.js"></script>
+</body>
+</html>

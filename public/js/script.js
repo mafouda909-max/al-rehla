@@ -3,7 +3,8 @@ const siteLinks = [
   { href: 'tickets.html', label: 'عروض التذاكر', page: 'tickets' },
   { href: 'visas.html', label: 'عروض التأشيرات', page: 'visas' },
   { href: 'request.html', label: 'اطلب عرضًا', page: 'request' },
-  { href: 'join-agent.html', label: 'انضم كوكيل', page: 'join-agent' }
+  { href: 'join-agent.html', label: 'انضم كوكيل', page: 'join-agent' },
+  { href: 'agent-dashboard.html', label: 'لوحة الوكيل', page: 'agent-dashboard' }
 ];
 
 const serviceContent = {
@@ -68,8 +69,9 @@ document.addEventListener('DOMContentLoaded', () => {
   if (page === 'request') renderRequestPage();
   if (page === 'join-agent') renderJoinAgentPage();
   if (page === 'agent') renderAgentPage();
+  if (page === 'agent-dashboard') setupAgentDashboard();
   if (page === 'offer-details') renderOfferDetailsPage();
-  if (page === 'admin') renderAdminPage();
+  if (page === 'admin') { renderAdminPage(); setupAdminModeration(); }
 
   setupDemoForms();
   setupApiForms();
@@ -84,6 +86,7 @@ function detectPage() {
     'request.html': 'request',
     'join-agent.html': 'join-agent',
     'agent.html': 'agent',
+    'agent-dashboard.html': 'agent-dashboard',
     'offer-details.html': 'offer-details',
     'admin.html': 'admin'
   };
@@ -595,6 +598,219 @@ function renderAdminPage() {
   }
 }
 
+/* --- Agent dashboard (own offers management) --- */
+
+async function setupAgentDashboard() {
+  const refreshBtn = document.querySelector('[data-refresh-own-offers]');
+  if (refreshBtn) {
+    refreshBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      loadOwnOffers();
+    });
+  }
+
+  // Delegated actions for submit/publish on own offers.
+  document.addEventListener('click', async (event) => {
+    const submitBtn = event.target.closest('[data-own-offer][data-action="submit"]');
+    const publishBtn = event.target.closest('[data-own-offer][data-action="publish"]');
+    const button = submitBtn || publishBtn;
+    if (!button) return;
+    event.preventDefault();
+    button.disabled = true;
+
+    const offerId = button.dataset.ownOffer;
+    const action = button.dataset.action;
+    const endpoint = `/api/offers/${offerId}/${action}`;
+    const res = await apiJson(endpoint, { method: 'POST' });
+    button.disabled = false;
+
+    if (!res.ok) {
+      const msg = res.data?.error?.message || 'تعذر تنفيذ الإجراء';
+      window.alert(msg);
+      return;
+    }
+    loadOwnOffers();
+  });
+
+  await loadOwnOffers();
+}
+
+async function loadOwnOffers() {
+  const grid = document.querySelector('[data-own-offers]');
+  if (!grid) return;
+
+  const sessionRes = await apiJson('/api/auth/session');
+  const session = sessionRes.data;
+  const isAgent = session?.authenticated && session?.account?.role === 'agent';
+
+  if (!isAgent) {
+    grid.innerHTML = `<div class="empty-state"><h3>سجّل الدخول كوكيل</h3><p>أنشئ حسابًا أو سجّل الدخول لإدارة عروضك.</p><div class="card-actions" style="justify-content:center;margin-top:16px"><a class="btn btn-primary" href="join-agent.html">إنشاء حساب وكيل</a></div></div>`;
+    return;
+  }
+
+  const res = await apiJson('/api/offers/own');
+  if (!res.ok) {
+    grid.innerHTML = `<div class="empty-state"><h3>تعذر تحميل عروضك</h3><p>تأكد من ربط قاعدة البيانات ثم أعِد المحاولة.</p></div>`;
+    return;
+  }
+
+  const list = res.data?.offers || [];
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state"><h3>لا توجد عروض بعد</h3><p>أنشئ عرضك الأول من النموذج أعلاه.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(offer => {
+    const actions = [];
+    if (offer.status === 'draft' || offer.status === 'rejected') {
+      actions.push(`<button class="btn btn-primary btn-sm" data-own-offer="${offer.id}" data-action="submit">إرسال للمراجعة</button>`);
+    }
+    if (offer.status === 'approved') {
+      actions.push(`<button class="btn btn-primary btn-sm" data-own-offer="${offer.id}" data-action="publish">نشر</button>`);
+    }
+    return `
+      <article class="offer-card">
+        <div class="offer-head">
+          <div>
+            <h3>${escapeHtml(offer.title)}</h3>
+            <div class="field-note">${escapeHtml(tripTypeLabel(offer.tripType))} — ${escapeHtml(offer.destinationCountry || '')}</div>
+          </div>
+          <span class="tag">${escapeHtml(statusLabel(offer.status))}</span>
+        </div>
+        <div class="price">${Number(offer.priceAmount).toLocaleString('ar-EG')} ${escapeHtml(offer.currency)}</div>
+        ${offer.pricingBasis ? `<div class="meta"><span>${escapeHtml(offer.pricingBasis)}</span></div>` : ''}
+        ${offer.description ? `<p>${escapeHtml(offer.description)}</p>` : ''}
+        ${actions.length ? `<div class="card-actions">${actions.join('')}</div>` : ''}
+      </article>`;
+  }).join('');
+}
+
+/* --- Admin moderation (real agent/offer queues) --- */
+
+async function loadAdminModeration() {
+  const agentBody = document.querySelector('[data-admin-agent-queue]');
+  const offerBody = document.querySelector('[data-admin-offer-queue]');
+
+  const sessionRes = await apiJson('/api/auth/session');
+  const session = sessionRes.data;
+  const isAdmin = session?.authenticated && session?.account?.role === 'admin';
+
+  if (!isAdmin) {
+    const note = '<tr><td colspan="5" class="empty-row">سجّل الدخول بحساب مدير لعرض قوائم المراجعة.</td></tr>';
+    if (agentBody) agentBody.innerHTML = note;
+    if (offerBody) offerBody.innerHTML = note;
+    return;
+  }
+
+  // Agent verification queue.
+  if (agentBody) {
+    const res = await apiJson('/api/admin/agents');
+    const list = res.ok ? res.data?.queue || [] : null;
+    if (!list) {
+      agentBody.innerHTML = '<tr><td colspan="5" class="empty-row">تعذر تحميل قائمة التوثيق — تأكد من ربط قاعدة البيانات.</td></tr>';
+    } else if (!list.length) {
+      agentBody.innerHTML = '<tr><td colspan="5" class="empty-row">لا يوجد وكلاء بانتظار التوثيق حاليًا.</td></tr>';
+    } else {
+      agentBody.innerHTML = list.map(row => {
+        const a = row.agent;
+        return `
+          <tr>
+            <td>${escapeHtml(a.displayName)}</td>
+            <td>${escapeHtml(row.email)}</td>
+            <td>${escapeHtml(a.city || '-')}</td>
+            <td><span class="status-badge review">${statusLabel(a.verificationStatus)}</span></td>
+            <td>
+              <button class="btn btn-primary btn-sm" data-admin-agent="${a.id}" data-action="approve">قبول</button>
+              <button class="btn btn-outline btn-sm" data-admin-agent="${a.id}" data-action="reject">رفض</button>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+  }
+
+  // Offer moderation queue.
+  if (offerBody) {
+    const res = await apiJson('/api/admin/offers');
+    const list = res.ok ? res.data?.queue || [] : null;
+    if (!list) {
+      offerBody.innerHTML = '<tr><td colspan="5" class="empty-row">تعذر تحميل قائمة العروض — تأكد من ربط قاعدة البيانات.</td></tr>';
+    } else if (!list.length) {
+      offerBody.innerHTML = '<tr><td colspan="5" class="empty-row">لا يوجد عروض بانتظار المراجعة حاليًا.</td></tr>';
+    } else {
+      offerBody.innerHTML = list.map(row => {
+        const o = row.offer;
+        return `
+          <tr>
+            <td>${escapeHtml(o.title)}</td>
+            <td>${escapeHtml(row.agentName || '-')}</td>
+            <td>${escapeHtml(tripTypeLabel(o.tripType))}</td>
+            <td>${escapeHtml(priceTypeLabel(o.priceType))} ${Number(o.priceAmount).toLocaleString('ar-EG')} ${escapeHtml(o.currency)}</td>
+            <td>
+              <button class="btn btn-primary btn-sm" data-admin-offer="${o.id}" data-action="approve">قبول</button>
+              <button class="btn btn-outline btn-sm" data-admin-offer="${o.id}" data-action="reject">رفض</button>
+            </td>
+          </tr>`;
+      }).join('');
+    }
+  }
+}
+
+async function setupAdminModeration() {
+  // Delegate approve/reject clicks (works after each re-render).
+  document.addEventListener('click', async (event) => {
+    const agentBtn = event.target.closest('[data-admin-agent][data-action]');
+    const offerBtn = event.target.closest('[data-admin-offer][data-action]');
+
+    const button = agentBtn || offerBtn;
+    if (!button) return;
+    event.preventDefault();
+    button.disabled = true;
+
+    let endpoint;
+    if (agentBtn) endpoint = `/api/admin/agents/${agentBtn.dataset.adminAgent}`;
+    else endpoint = `/api/admin/offers/${offerBtn.dataset.adminOffer}`;
+
+    const decision = button.dataset.action;
+    // Optional prompt for a reason on reject.
+    const reason = decision === 'reject' ? (window.prompt('سبب الرفض (اختياري)') || '') : undefined;
+    const body = { decision, reason };
+
+    const res = await apiJson(endpoint, { method: 'POST', body });
+    button.disabled = false;
+    if (!res.ok) {
+      const msg = res.data?.error?.message || 'تعذر تنفيذ الإجراء';
+      window.alert(msg);
+      return;
+    }
+    // Refresh the queues to reflect the change.
+    loadAdminModeration();
+  });
+
+  await loadAdminModeration();
+}
+
+function statusLabel(status) {
+  const map = {
+    unverified: 'غير موثق',
+    pending: 'قيد المراجعة',
+    verified: 'موثق',
+    rejected: 'مرفوض',
+    draft: 'مسودة',
+    pending_review: 'قيد المراجعة',
+    approved: 'مقبول',
+    published: 'منشور',
+    rejected2: 'مرفوض',
+    expired: 'منتهي',
+    archived: 'مؤرشف',
+  };
+  return map[status] || status;
+}
+
+function tripTypeLabel(type) {
+  const map = { ticket: 'تذكرة', visa: 'تأشيرة', procedure: 'إجراءات سفر' };
+  return map[type] || type;
+}
+
 /* --- Real backend integration (API client) --- */
 
 async function getCsrfToken() {
@@ -634,6 +850,53 @@ async function apiJson(path, options = {}) {
  * message instead of pretending the request was persisted.
  */
 const apiFormConfig = {
+  login: {
+    endpoint: '/api/auth/login',
+    build(fd) {
+      return {
+        email: (fd.get('email') || '').trim(),
+        password: fd.get('password') || '',
+      };
+    },
+    successMessage: 'تم تسجيل الدخول بنجاح. يمكنك الآن إدارة عروضك.',
+    afterReset() {
+      // After login the own-offers list can load.
+      loadOwnOffers();
+    },
+  },
+  'offer-create': {
+    endpoint: '/api/offers',
+    build(fd) {
+      const toIso = (v) => (v ? new Date(v).toISOString() : undefined);
+      return {
+        agentId: '', // server derives ownership from the session; ignored
+        title: (fd.get('title') || '').trim(),
+        description: (fd.get('description') || '').trim() || undefined,
+        tripType: (fd.get('tripType') || '').trim(),
+        originCity: (fd.get('originCity') || '').trim() || undefined,
+        destinationCity: (fd.get('destinationCity') || '').trim() || undefined,
+        destinationCountry: (fd.get('destinationCountry') || '').trim() || undefined,
+        priceAmount: (fd.get('priceAmount') || '').trim(),
+        currency: (fd.get('currency') || '').trim(),
+        priceType: (fd.get('priceType') || '').trim(),
+        pricingBasis: (fd.get('pricingBasis') || '').trim() || undefined,
+        includes: (fd.get('includes') || '').trim() || undefined,
+        excludes: (fd.get('excludes') || '').trim() || undefined,
+        validFrom: toIso(fd.get('validFrom')),
+        validUntil: toIso(fd.get('validUntil')),
+      };
+    },
+    validate(body) {
+      if (!body.title || !body.tripType || !body.priceAmount || !body.currency) {
+        return { ok: false, message: 'أكمل العنوان ونوع الخدمة والسعر والعملة.' };
+      }
+      return { ok: true };
+    },
+    successMessage: 'تم حفظ العرض كمسودة. أرسله للمراجعة من قائمة عروضي.',
+    afterReset() {
+      loadOwnOffers();
+    },
+  },
   'join-agent': {
     endpoint: '/api/auth/register',
     build(fd) {

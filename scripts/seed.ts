@@ -2,16 +2,17 @@
  * THE JOURNEY — safe, idempotent staging seed.
  *
  * Creates (or leaves untouched) three staging accounts:
- *   - admin     (role: admin)
- *   - verified agent (role: agent + agent profile with verificationStatus: verified)
- *   - traveler  (role: traveler)
+ *   - admin         (role: admin)
+ *   - verified agent (role: agent + verified agent profile)
+ *   - traveler      (role: traveler)
  *
- * Idempotent: skips any email that already exists. Does NOT drop/wipe/update
- * existing rows. Run with:  npm run db:seed
+ * Also seeds a published offer for the verified agent so traveler discovery
+ * has data, but only if that agent has no offer yet (idempotent).
  *
- * The default passwords are staging-only placeholders. Set the
- * ADMIN_PASSWORD / AGENT_PASSWORD / TRAVELER_PASSWORD env vars to override
- * them in a non-development environment.
+ * Does NOT drop/wipe/update existing rows. Run with:  npm run db:seed
+ *
+ * Passwords are staging-only placeholders; override with:
+ *   ADMIN_PASSWORD / AGENT_PASSWORD / TRAVELER_PASSWORD
  */
 
 import process from 'node:process';
@@ -20,7 +21,7 @@ import { db, schema } from '@/lib/db';
 import { hashPassword } from '@/lib/auth/password';
 import type { AccountRole } from '@/lib/db/schema';
 
-const { accounts, agents } = schema;
+const { accounts, agents, offers } = schema;
 
 const DEFAULT_PASSWORD = 'ChangeMe_Staging_123';
 
@@ -86,6 +87,40 @@ async function ensureVerifiedAgent(accountId: string, displayName: string) {
   return rows[0].id;
 }
 
+async function ensurePublishedOfferForAgent(
+  agentId: string,
+  opts: { title: string; tripType: 'ticket' | 'visa'; country: string; price: string; currency: string },
+) {
+  const existing = await db()
+    .select({ id: offers.id })
+    .from(offers)
+    .where(eq(offers.agentId, agentId))
+    .limit(1);
+  if (existing.length) {
+    console.log('[seed] agent already has offers, skipping offer creation');
+    return existing[0].id;
+  }
+  const rows = await db()
+    .insert(offers)
+    .values({
+      agentId,
+      title: opts.title,
+      description: 'عرض تجريبي جاهز من وكيل موثق.',
+      tripType: opts.tripType,
+      destinationCountry: opts.country,
+      priceAmount: opts.price,
+      currency: opts.currency,
+      priceType: 'starting_from',
+      pricingBasis: 'أسعار مؤكدة قبل الحجز',
+      includes: 'متابعة كاملة وتأكيد السعر قبل أي التزام',
+      status: 'published',
+      validUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+    })
+    .returning({ id: offers.id });
+  console.log('[seed] created published offer for verified agent');
+  return rows[0].id;
+}
+
 async function main() {
   const adminId = await ensureAccount({
     email: 'admin@thejourney.local',
@@ -106,9 +141,24 @@ async function main() {
     password: passwordFor('TRAVELER_PASSWORD'),
   });
 
-  await ensureVerifiedAgent(agentId, 'مكتب النخبة للسفر');
+  const agentProfileId = await ensureVerifiedAgent(agentId, 'مكتب النخبة للسفر');
+  if (agentProfileId) {
+    await ensurePublishedOfferForAgent(agentProfileId, {
+      title: 'القاهرة إلى الرياض',
+      tripType: 'ticket',
+      country: 'السعودية',
+      price: '8450.00',
+      currency: 'EGP',
+    });
+  }
 
-  console.log('[seed] done. admin=%s agent=%s traveler=%s', adminId, agentId, travelerId);
+  console.log(
+    '[seed] done. admin=%s agent=%s traveler=%s offerAgentProfile=%s',
+    adminId,
+    agentId,
+    travelerId,
+    agentProfileId,
+  );
 }
 
 main()

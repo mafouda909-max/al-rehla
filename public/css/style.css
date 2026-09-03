@@ -1457,3 +1457,28 @@ textarea:focus {
     font-size: 2.3rem;
   }
 }
+
+/* Admin moderation + agent dashboard helpers */
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  min-height: 0;
+}
+
+.empty-row {
+  text-align: center;
+  color: var(--muted);
+  padding: 18px 8px;
+  font-size: 0.95rem;
+}
+
+.agent-offer-status {
+  display: inline-block;
+  font-size: 0.85rem;
+}
+
+[data-admin-agent-queue] button,
+[data-admin-offer-queue] button {
+  margin-inline-end: 6px;
+  margin-bottom: 4px;
+}

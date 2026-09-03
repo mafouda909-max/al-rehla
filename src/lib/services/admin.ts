@@ -92,11 +92,16 @@ export async function rejectAgent(adminAccountId: string, agentId: string, reaso
 }
 
 export async function listOfferModerationQueue() {
-  return db()
-    .select()
+  const rows = await db()
+    .select({
+      offer: offers,
+      agentName: agents.displayName,
+    })
     .from(offers)
+    .innerJoin(agents, eq(offers.agentId, agents.id))
     .where(eq(offers.status, 'pending_review'))
     .orderBy(offers.createdAt);
+  return rows;
 }
 
 export async function approveOffer(adminAccountId: string, offerId: string, reason?: string) {

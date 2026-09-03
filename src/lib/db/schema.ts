@@ -173,6 +173,8 @@ export const offers = pgTable(
     currency: varchar('currency', { length: 3 }).notNull(),
     priceType: offerPriceType('price_type').notNull().default('starting_from'),
     pricingBasis: text('pricing_basis'),
+    includes: text('includes'),
+    excludes: text('excludes'),
     validFrom: timestamp('valid_from', { withTimezone: true }),
     validUntil: timestamp('valid_until', { withTimezone: true }),
     status: offerStatus('status').notNull().default('draft'),

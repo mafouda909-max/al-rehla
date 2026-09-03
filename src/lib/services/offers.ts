@@ -1,8 +1,9 @@
-import { and, eq, gt, isNull, or } from 'drizzle-orm';
+import { and, asc, eq, gt, isNull, or } from 'drizzle-orm';
 import { db } from '@/lib/db';
 import { offers } from '@/lib/db/schema';
 import type { OfferStatus } from '@/lib/db/schema';
 import { HttpError } from '@/lib/api-response';
+import { canEditOffer, canPublishOffer, canSubmitOffer } from '@/lib/offers/rules';
 import type { OfferCreateInput, OfferUpdateInput } from '@/lib/validation/offer';
 
 function isValidForPublic(offer: {
@@ -49,6 +50,15 @@ export async function getOwnedOffer(agentId: string, id: string) {
   return rows[0] ?? null;
 }
 
+/** All offers belonging to the authenticated agent, newest first. */
+export async function listAgentOwnOffers(agentId: string) {
+  return db()
+    .select()
+    .from(offers)
+    .where(eq(offers.agentId, agentId))
+    .orderBy(asc(offers.createdAt));
+}
+
 export async function createOffer(agentId: string, input: OfferCreateInput) {
   if (input.agentId !== agentId) {
     throw new HttpError(403, 'forbidden', 'You can only create offers for your own agent profile');
@@ -67,6 +77,8 @@ export async function createOffer(agentId: string, input: OfferCreateInput) {
       currency: input.currency,
       priceType: input.priceType,
       pricingBasis: input.pricingBasis ?? null,
+      includes: input.includes ?? null,
+      excludes: input.excludes ?? null,
       validFrom: input.validFrom ? new Date(input.validFrom) : null,
       validUntil: input.validUntil ? new Date(input.validUntil) : null,
       status: 'draft',
@@ -84,7 +96,7 @@ export async function updateOffer(
   if (!existing) {
     throw new HttpError(404, 'offer_not_found', 'Offer not found');
   }
-  if (existing.status !== 'draft' && existing.status !== 'rejected') {
+  if (!canEditOffer(existing.status)) {
     throw new HttpError(409, 'offer_not_editable', 'Only draft or rejected offers can be edited');
   }
 
@@ -101,6 +113,8 @@ export async function updateOffer(
       currency: input.currency ?? existing.currency,
       priceType: input.priceType ?? existing.priceType,
       pricingBasis: input.pricingBasis ?? existing.pricingBasis,
+      includes: input.includes ?? existing.includes,
+      excludes: input.excludes ?? existing.excludes,
       validFrom: input.validFrom ? new Date(input.validFrom) : existing.validFrom,
       validUntil: input.validUntil ? new Date(input.validUntil) : existing.validUntil,
       updatedAt: new Date(),
@@ -117,7 +131,7 @@ export async function submitOfferForReview(agentId: string, offerId: string) {
   if (!existing) {
     throw new HttpError(404, 'offer_not_found', 'Offer not found');
   }
-  if (existing.status !== 'draft' && existing.status !== 'rejected') {
+  if (!canSubmitOffer(existing.status)) {
     throw new HttpError(409, 'offer_not_submittable', 'Only draft or rejected offers can be submitted');
   }
   const rows = await db()
@@ -146,7 +160,7 @@ export async function publishOffer(agentId: string, offerId: string) {
   if (!existing) {
     throw new HttpError(404, 'offer_not_found', 'Offer not found');
   }
-  if (existing.status !== 'approved') {
+  if (!canPublishOffer(existing.status)) {
     throw new HttpError(409, 'offer_not_publishable', 'Only approved offers can be published');
   }
   const rows = await db()
