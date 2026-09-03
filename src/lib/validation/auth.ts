@@ -18,7 +18,8 @@ export const registerSchema = z.object({
     .object({
       city: z.string().trim().max(120).optional(),
       country: z.string().trim().max(120).optional(),
-      specialty: z.string().trim().max(255).optional(),
+      phone: z.string().trim().min(5).max(40).optional(),
+      bio: z.string().trim().max(2000).optional(),
       licenseType: z.string().trim().max(120).optional(),
     })
     .optional(),

@@ -31,6 +31,7 @@ export function toPublicAgent(agent: {
   photoUrl: string | null;
   city: string | null;
   country: string | null;
+  contactPhone: string | null;
   verificationStatus: string;
   responseRate: string | null;
   avgResponseHours: string | null;
@@ -45,6 +46,7 @@ export function toPublicAgent(agent: {
     photoUrl: agent.photoUrl,
     city: agent.city,
     country: agent.country,
+    contactPhone: agent.contactPhone,
     verificationStatus: agent.verificationStatus,
     responseRate: agent.responseRate,
     avgResponseHours: agent.avgResponseHours,
@@ -69,6 +71,7 @@ export async function createAgentProfile(accountId: string, input: AgentProfileI
       photoUrl: input.photoUrl || null,
       city: input.city ?? null,
       country: input.country ?? null,
+      contactPhone: input.contactPhone ?? null,
       licenseType: input.licenseType ?? null,
       licenseNumber: input.licenseNumber ?? null,
       verificationStatus: 'unverified',
@@ -94,6 +97,7 @@ export async function updateAgentProfile(accountId: string, input: AgentProfileI
       photoUrl: input.photoUrl || existing.photoUrl,
       city: input.city ?? existing.city,
       country: input.country ?? existing.country,
+      contactPhone: input.contactPhone ?? existing.contactPhone,
       licenseType: input.licenseType ?? existing.licenseType,
       licenseNumber: input.licenseNumber ?? existing.licenseNumber,
       updatedAt: new Date(),

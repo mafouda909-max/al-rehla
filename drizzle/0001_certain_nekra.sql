@@ -1,0 +1,1 @@
+ALTER TABLE "agents" ADD COLUMN "contact_phone" text;

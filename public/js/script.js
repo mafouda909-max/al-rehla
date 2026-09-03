@@ -72,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
   if (page === 'admin') renderAdminPage();
 
   setupDemoForms();
+  setupApiForms();
 });
 
 function detectPage() {
@@ -502,6 +503,93 @@ function renderAdminPage() {
       </li>
     `).join('');
   }
+}
+
+/* --- Real backend integration (API client) --- */
+
+async function getCsrfToken() {
+  const res = await fetch('/api/auth/csrf', { credentials: 'same-origin' });
+  if (!res.ok) throw new Error('تعذر الحصول على رمز الأمان');
+  const data = await res.json();
+  return data.csrfToken;
+}
+
+async function apiJson(path, options = {}) {
+  const method = options.method || 'GET';
+  const body = options.body;
+  const headers = { ...(options.headers || {}) };
+
+  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (method !== 'GET') {
+    const token = await getCsrfToken();
+    headers['x-csrf-token'] = token;
+  }
+
+  const res = await fetch(path, {
+    method,
+    headers,
+    credentials: 'same-origin',
+    body: body !== undefined ? JSON.stringify(body) : undefined,
+  });
+
+  let data = null;
+  try { data = await res.json(); } catch (e) { data = null; }
+  return { ok: res.ok, status: res.status, data };
+}
+
+function setupApiForms() {
+  const form = document.querySelector('[data-api-form="join-agent"]');
+  if (!form) return;
+  const feedback = form.querySelector('[data-form-feedback]');
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const fd = new FormData(form);
+    const submitBtn = form.querySelector('button[type="submit"]');
+
+    if (feedback) {
+      feedback.classList.remove('visible');
+      feedback.textContent = '';
+    }
+    if (submitBtn) submitBtn.disabled = true;
+
+    try {
+      const payload = {
+        email: (fd.get('email') || '').trim(),
+        password: fd.get('password') || '',
+        displayName: (fd.get('displayName') || '').trim(),
+        role: 'agent',
+        agent: {
+          city: (fd.get('city') || '').trim() || undefined,
+          country: (fd.get('country') || '').trim() || undefined,
+          phone: (fd.get('phone') || '').trim() || undefined,
+          licenseType: (fd.get('licenseType') || '').trim() || undefined,
+          bio: (fd.get('bio') || '').trim() || undefined,
+        },
+      };
+
+      const result = await apiJson('/api/auth/register', { method: 'POST', body: payload });
+
+      if (result.ok) {
+        if (feedback) {
+          feedback.textContent = 'تم إنشاء حساب الوكيل بنجاح. يمكنك الآن إكمال ملفك وإضافة عروضك.';
+          feedback.classList.add('visible');
+        }
+        form.reset();
+        window.setTimeout(() => { window.location.href = 'agent.html'; }, 1200);
+      } else {
+        const message = result.data?.error?.message || 'حدث خطأ، حاول مرة أخرى.';
+        if (feedback) { feedback.textContent = message; feedback.classList.add('visible'); }
+      }
+    } catch (e) {
+      if (feedback) {
+        feedback.textContent = 'تعذر الاتصال بالخادم. تأكد من إعداد قاعدة البيانات.';
+        feedback.classList.add('visible');
+      }
+    } finally {
+      if (submitBtn) submitBtn.disabled = false;
+    }
+  });
 }
 
 function setupDemoForms() {

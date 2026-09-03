@@ -7,6 +7,7 @@ export const agentProfileSchema = z.object({
   photoUrl: z.string().url().max(500).optional().or(z.literal('')),
   city: z.string().trim().max(120).optional(),
   country: z.string().trim().max(120).optional(),
+  contactPhone: z.string().trim().min(5).max(40).optional(),
   licenseType: z.string().trim().max(120).optional(),
   licenseNumber: z.string().trim().max(120).optional(),
 });

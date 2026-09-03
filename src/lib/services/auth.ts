@@ -48,6 +48,8 @@ export async function registerAccount(input: RegisterInput): Promise<{
           displayName: input.displayName,
           city: input.agent?.city ?? null,
           country: input.agent?.country ?? null,
+          contactPhone: input.agent?.phone ?? null,
+          bio: input.agent?.bio ?? null,
           licenseType: input.agent?.licenseType ?? null,
           verificationStatus: 'unverified',
           totalTrips: 0,

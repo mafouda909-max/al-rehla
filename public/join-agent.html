@@ -52,44 +52,53 @@
     <section class="section">
       <div class="container split-layout">
         <div>
-          <form class="form-card" data-demo-form="join-agent">
+          <form class="form-card" data-api-form="join-agent" id="joinAgentForm">
             <div class="section-head">
               <div>
                 <h2 class="section-title">نموذج الانضمام</h2>
-                <p class="section-sub">نموذج مختصر يساعدنا في عرض فكرة الانضمام بدون تعقيد أو خطوات كثيرة.</p>
+                <p class="section-sub">أنشئ حسابك كأول خطوة، ثم سيتم استكمال ملفك عبر لوحة الوكيل بعد المراجعة.</p>
               </div>
             </div>
 
             <div class="form-grid">
-              <div class="field">
-                <label>اسم المكتب أو الوكيل</label>
-                <input class="input" required placeholder="اسم المكتب">
+              <div class="field full">
+                <label>البريد الإلكتروني</label>
+                <input class="input" type="email" name="email" required placeholder="you@example.com">
+              </div>
+              <div class="field full">
+                <label>كلمة المرور</label>
+                <input class="input" type="password" name="password" minlength="8" required placeholder="8 أحرف على الأقل">
               </div>
               <div class="field">
-                <label>نوع الخدمة</label>
-                <select required>
-                  <option>تذاكر</option>
-                  <option>تأشيرات</option>
-                  <option>تذاكر وتأشيرات</option>
-                  <option>إجراءات سفر</option>
-                </select>
+                <label>اسم المكتب أو الوكيل</label>
+                <input class="input" name="displayName" required placeholder="اسم المكتب">
+              </div>
+              <div class="field">
+                <label>المدينة</label>
+                <input class="input" name="city" placeholder="القاهرة">
+              </div>
+              <div class="field">
+                <label>الدولة</label>
+                <input class="input" name="country" placeholder="مصر">
               </div>
               <div class="field">
                 <label>رقم واتساب</label>
-                <input class="input" required placeholder="01xxxxxxxxx">
+                <input class="input" name="phone" required placeholder="01xxxxxxxxx">
               </div>
               <div class="field">
-                <label>الدول أو التخصص</label>
-                <input class="input" placeholder="السعودية، الإمارات، الكويت">
+                <label>سنة الإصدار / مجال الترخيص</label>
+                <input class="input" name="licenseType" placeholder="تصريح سفر / تأشيرات">
               </div>
               <div class="field full">
                 <label>ما الذي يمكنك تقديمه على المنصة؟</label>
-                <textarea placeholder="اكتب نموذجًا للعروض أو الخدمات التي تريد إظهارها داخل الرحلة."></textarea>
+                <textarea name="bio" placeholder="اكتب نموذجًا للعروض أو الخدمات التي تريد إظهارها داخل الرحلة."></textarea>
               </div>
             </div>
 
-            <button class="btn btn-primary" type="submit" style="margin-top:18px;width:100%">إرسال طلب الانضمام</button>
-            <div class="success-message" style="margin-top:16px">تم استلام طلب الانضمام كنموذج تجريبي. في النسخة الحالية لا يتم حفظ البيانات، لكن الواجهة تعرض شكل رحلة الانضمام المستقبلي بوضوح.</div>
+            <input type="hidden" name="role" value="agent">
+
+            <button class="btn btn-primary" type="submit" style="margin-top:18px;width:100%">إنشاء حساب الوكيل</button>
+            <div class="success-message" data-form-feedback style="margin-top:16px"></div>
           </form>
         </div>
 

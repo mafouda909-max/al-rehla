@@ -134,6 +134,7 @@ export const agents = pgTable(
     photoUrl: text('photo_url'),
     city: text('city'),
     country: text('country'),
+    contactPhone: text('contact_phone'),
     licenseType: text('license_type'),
     licenseNumber: text('license_number'),
     verificationStatus: agentVerificationStatus('verification_status')
