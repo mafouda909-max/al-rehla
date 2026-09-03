@@ -3,6 +3,29 @@ import { Pool } from 'pg';
 import * as schema from './schema';
 
 /**
+ * Normalize a DATABASE_URL for node-postgres.
+ *
+ * - `channel_binding=require` is not reliably completed by node-postgres and
+ *   can abort the connection at startup; we drop it (the server still uses
+ *   SCRAM, just not channel-bound).
+ * - Neon pooler uses TLS; we force SSL with a permissive verification so the
+ *   connect works across Neon's pooler endpoint without a custom CA bundle.
+ */
+function normalizedDbConfig(url?: string) {
+  if (!url) return { connectionString: url, ssl: undefined };
+  try {
+    const u = new URL(url);
+    u.searchParams.delete('channel_binding');
+    return {
+      connectionString: u.toString(),
+      ssl: { rejectUnauthorized: false } as const,
+    };
+  } catch {
+    return { connectionString: url, ssl: { rejectUnauthorized: false } as const };
+  }
+}
+
+/**
  * PostgreSQL connection pool via node-postgres + Drizzle.
  *
  * Uses a global singleton so Hot Module Replacement doesn't exhaust the
@@ -15,8 +38,10 @@ const globalForDb = globalThis as unknown as {
 };
 
 function createPool() {
+  const config = normalizedDbConfig(process.env.DATABASE_URL);
   const pool = new Pool({
-    connectionString: process.env.DATABASE_URL,
+    connectionString: config.connectionString,
+    ssl: config.ssl,
     max: 10,
     idleTimeoutMillis: 30_000,
     connectionTimeoutMillis: 10_000,
