@@ -601,27 +601,46 @@ function renderAdminPage() {
 /* --- Agent dashboard (own offers management) --- */
 
 async function setupAgentDashboard() {
-  const refreshBtn = document.querySelector('[data-refresh-own-offers]');
-  if (refreshBtn) {
-    refreshBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      loadOwnOffers();
-    });
+  const refreshOffers = document.querySelector('[data-refresh-own-offers]');
+  if (refreshOffers) {
+    refreshOffers.addEventListener('click', (e) => { e.preventDefault(); loadOwnOffers(); });
+  }
+  const refreshInbox = document.querySelector('[data-refresh-inbox]');
+  if (refreshInbox) {
+    refreshInbox.addEventListener('click', (e) => { e.preventDefault(); loadAgentInbox(); });
   }
 
-  // Delegated actions for submit/publish on own offers.
+  // Delegated actions for offer submit/publish and contact view/respond/close.
   document.addEventListener('click', async (event) => {
     const submitBtn = event.target.closest('[data-own-offer][data-action="submit"]');
     const publishBtn = event.target.closest('[data-own-offer][data-action="publish"]');
-    const button = submitBtn || publishBtn;
+    const viewBtn = event.target.closest('[data-contact][data-action="view"]');
+    const respondBtn = event.target.closest('[data-contact][data-action="respond"]');
+    const closeBtn = event.target.closest('[data-contact][data-action="close"]');
+
+    const button = submitBtn || publishBtn || viewBtn || respondBtn || closeBtn;
     if (!button) return;
     event.preventDefault();
     button.disabled = true;
 
-    const offerId = button.dataset.ownOffer;
-    const action = button.dataset.action;
-    const endpoint = `/api/offers/${offerId}/${action}`;
-    const res = await apiJson(endpoint, { method: 'POST' });
+    let endpoint;
+    let body;
+    if (submitBtn) {
+      endpoint = `/api/offers/${submitBtn.dataset.ownOffer}/submit`;
+    } else if (publishBtn) {
+      endpoint = `/api/offers/${publishBtn.dataset.ownOffer}/publish`;
+    } else if (viewBtn) {
+      endpoint = `/api/contacts/${viewBtn.dataset.contact}/view`;
+    } else if (respondBtn) {
+      endpoint = `/api/contacts/${respondBtn.dataset.contact}/respond`;
+      const response = window.prompt('اكتب ردك على العميل:');
+      if (!response) { button.disabled = false; return; }
+      body = { response };
+    } else if (closeBtn) {
+      endpoint = `/api/contacts/${closeBtn.dataset.contact}/close`;
+    }
+
+    const res = await apiJson(endpoint, { method: 'POST', body });
     button.disabled = false;
 
     if (!res.ok) {
@@ -629,10 +648,12 @@ async function setupAgentDashboard() {
       window.alert(msg);
       return;
     }
-    loadOwnOffers();
+    if (submitBtn || publishBtn) loadOwnOffers();
+    if (viewBtn || respondBtn || closeBtn) loadAgentInbox();
   });
 
   await loadOwnOffers();
+  await loadAgentInbox();
 }
 
 async function loadOwnOffers() {
@@ -683,6 +704,65 @@ async function loadOwnOffers() {
         ${actions.length ? `<div class="card-actions">${actions.join('')}</div>` : ''}
       </article>`;
   }).join('');
+}
+
+async function loadAgentInbox() {
+  const grid = document.querySelector('[data-agent-inbox]');
+  if (!grid) return;
+
+  const sessionRes = await apiJson('/api/auth/session');
+  const session = sessionRes.data;
+  const isAgent = session?.authenticated && session?.account?.role === 'agent';
+
+  if (!isAgent) {
+    grid.innerHTML = `<div class="empty-state"><h3>سجّل الدخول كوكيل</h3><p>أنشئ حسابًا أو سجّل الدخول لعرض طلبات العملاء.</p></div>`;
+    return;
+  }
+
+  const res = await apiJson('/api/contacts/inbox');
+  if (!res.ok) {
+    grid.innerHTML = `<div class="empty-state"><h3>تعذر تحميل الطلبات</h3><p>تأكد من ربط قاعدة البيانات ثم أعِد المحاولة.</p></div>`;
+    return;
+  }
+
+  const list = res.data?.contacts || [];
+  if (!list.length) {
+    grid.innerHTML = `<div class="empty-state"><h3>لا توجد طلبات جديدة</h3><p>عندما يطلب عميل عرضًا سيظهر هنا.</p></div>`;
+    return;
+  }
+
+  grid.innerHTML = list.map(contact => {
+    const actions = [];
+    if (contact.status === 'new') {
+      actions.push(`<button class="btn btn-outline btn-sm" data-contact="${contact.id}" data-action="view">تمت المراجعة</button>`);
+    }
+    if (contact.status !== 'closed' && contact.status !== 'cancelled') {
+      actions.push(`<button class="btn btn-primary btn-sm" data-contact="${contact.id}" data-action="respond">رد</button>`);
+      actions.push(`<button class="btn btn-soft btn-sm" data-contact="${contact.id}" data-action="close">إغلاق</button>`);
+    }
+    return `
+      <article class="request-card">
+        <span class="request-type ${contact.status === 'new' ? 'visa' : ''}">${escapeHtml(contactStatusLabel(contact.status))}</span>
+        <h3>${escapeHtml(contact.travelerName || 'عميل')}</h3>
+        <p>${escapeHtml(contact.message || '')}</p>
+        <div class="request-card-footer">
+          <b>${escapeHtml(contact.travelerPhone || '')}</b>
+          <span>${escapeHtml(contact.travelerEmail || '')}</span>
+        </div>
+        ${actions.length ? `<div class="card-actions" style="margin-top:14px">${actions.join('')}</div>` : ''}
+      </article>`;
+  }).join('');
+}
+
+function contactStatusLabel(status) {
+  const map = {
+    new: 'جديد',
+    viewed: 'مقروء',
+    responded: 'تم الرد',
+    closed: 'مغلق',
+    cancelled: 'ملغي',
+  };
+  return map[status] || status;
 }
 
 /* --- Admin moderation (real agent/offer queues) --- */
