@@ -1,0 +1,28 @@
+# Optional local PostgreSQL for THE JOURNEY.
+# Start with:  docker compose up -d
+# Then copy .env.example -> .env (DATABASE_URL points at this instance).
+#
+# This is an OPTIONAL convenience for local development. The application code
+# itself has no hard dependency on Docker; it only needs reachable PostgreSQL
+# through DATABASE_URL.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: al_rehla_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: al_rehla
+    ports:
+      - "5432:5432"
+    volumes:
+      - al_rehla_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d al_rehla"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  al_rehla_pgdata:

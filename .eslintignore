@@ -1,0 +1,8 @@
+node_modules
+.next
+out
+public
+drizzle
+coverage
+next-env.d.ts
+*.md
