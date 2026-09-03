@@ -234,10 +234,15 @@ function renderOffersPage(type) {
 
   prefillFormFromQuery(form, search);
 
+  // Data source: starts with the static demo data, then upgrades to the real
+  // published offers loaded from /api/offers when available. Falls back
+  // silently to demo data when the API is unreachable/unavailable.
+  let source = offers;
+
   const apply = () => {
     const formData = new FormData(form);
     const query = Object.fromEntries(formData.entries());
-    const filtered = filterOffers(type, query);
+    const filtered = filterOffers(type, query, source);
     grid.innerHTML = filtered.length ? filtered.map(offerCard).join('') : '';
     if (count) count.textContent = `${filtered.length} نتيجة`;
     if (meta) meta.innerHTML = buildFilterMeta(type, filtered);
@@ -260,6 +265,83 @@ function renderOffersPage(type) {
   });
 
   apply();
+
+  // Progressive upgrade: if real published offers come back, render them.
+  loadPublishedOffers()
+    .then(normalized => {
+      if (normalized && normalized.length) {
+        source = normalized;
+        apply();
+      }
+    })
+    .catch(() => { /* keep demo data */ });
+}
+
+/* --- Real published offers (load + normalize to the card shape) --- */
+
+function loadPublishedOffers() {
+  return Promise.all([
+    apiJson('/api/offers'),
+    apiJson('/api/agents'),
+  ]).then(([offersRes, agentsRes]) => {
+    const list = offersRes?.data?.offers;
+    const agentsList = agentsRes?.data?.agents || [];
+    const agentMap = {};
+    agentsList.forEach(agent => {
+      agentMap[agent.id] = agent;
+    });
+    if (!Array.isArray(list)) return [];
+    return list.map(offer => normalizeApiOffer(offer, agentMap));
+  });
+}
+
+function normalizeApiOffer(offer, agentMap) {
+  const agent = agentMap[offer.agentId];
+  const type = offer.tripType === 'visa' ? 'visa' : 'ticket';
+  return {
+    id: offer.id,
+    type,
+    title: offer.title,
+    country: offer.destinationCountry || '',
+    from: offer.originCity || '',
+    to: offer.destinationCity || '',
+    price: Number(offer.priceAmount),
+    currency: offer.currency,
+    includes: offer.pricingBasis ? `الأساس: ${offer.pricingBasis}` : '',
+    excludes: '',
+    updated: timeAgoLabel(offer.updatedAt),
+    validity: offer.validUntil ? formatDateLabel(offer.validUntil) : 'حسب التوفر',
+    agent: agent ? agent.displayName : 'وكيل موثوق',
+    agentId: offer.agentId,
+    tag: priceTypeLabel(offer.priceType),
+    desc: offer.description || '',
+    visaType: offer.tripType === 'visa' ? 'خدمة تأشيرة' : '',
+    duration: '',
+    support: '',
+  };
+}
+
+function timeAgoLabel(value) {
+  if (!value) return 'اليوم';
+  const diff = Date.now() - new Date(value).getTime();
+  const day = 1000 * 60 * 60 * 24;
+  if (diff < day) return 'اليوم';
+  if (diff < 2 * day) return 'منذ يوم';
+  return `منذ ${Math.round(diff / day)} أيام`;
+}
+
+function formatDateLabel(value) {
+  try {
+    return new Date(value).toLocaleDateString('ar-EG');
+  } catch (e) {
+    return 'حسب التوفر';
+  }
+}
+
+function priceTypeLabel(value) {
+  if (value === 'fixed') return 'سعر ثابت';
+  if (value === 'negotiable') return 'قابل للتفاوض';
+  return 'الأسعار تبدأ من';
 }
 
 function renderRequestPage() {
@@ -749,8 +831,8 @@ function markActiveRequestTab(service) {
   });
 }
 
-function filterOffers(type, query) {
-  return offers.filter(offer => {
+function filterOffers(type, query, source = offers) {
+  return source.filter(offer => {
     if (offer.type !== type) return false;
 
     const country = normalize(query.country);
