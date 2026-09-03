@@ -1,26 +1,16 @@
 import type { NextRequest } from 'next/server';
-import { getSessionFromRequest } from '@/lib/auth/session';
+import { resolveAuthContext } from '@/lib/services/auth';
+import type { AuthContext } from '@/lib/auth/types';
 import type { AccountRole } from '@/lib/db/schema';
 
-/** The authenticated principal derived ONLY from the server-side session. */
-export interface AuthContext {
-  accountId: string;
-  email: string;
-  role: AccountRole;
-  displayName: string | null;
-  sessionId: string;
-}
+export type { AuthContext };
+export type { AccountRole };
 
 export async function getAuth(request: NextRequest): Promise<AuthContext | null> {
-  const session = await getSessionFromRequest(request);
-  if (!session) return null;
-  return {
-    accountId: session.accountId,
-    email: session.email,
-    role: session.role,
-    displayName: session.displayName,
-    sessionId: session.sessionId,
-  };
+  // `request` is retained for signature compatibility; the Neon Auth session is
+  // resolved from the request context (next/headers) rather than the cookie jar.
+  void request;
+  return resolveAuthContext();
 }
 
 export class UnauthorizedError extends Error {

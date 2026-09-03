@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { ok, created, withErrorHandling } from '@/lib/api-response';
 import { parseBody } from '@/lib/api-body';
 import { reviewCreateSchema } from '@/lib/validation/review';
-import { requireAuth, requireRole } from '@/lib/auth/context';
+import { requireRole } from '@/lib/auth/context';
 import { createReview } from '@/lib/services/reviews';
 
 export const runtime = 'nodejs';

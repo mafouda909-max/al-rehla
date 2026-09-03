@@ -6,6 +6,13 @@ import { accounts, sessions } from '@/lib/db/schema';
 import { env } from '@/lib/env';
 import { getSessionCookieName } from '@/lib/auth/cookie';
 
+/**
+ * LEGACY internal session-token auth. Replaced by Neon Auth for the request
+ * path (`/@/lib/auth/context` now resolves the session from Neon). Retained
+ * for the `sessions` table (schema/migrations) and pure-function tests; it is
+ * no longer used to authenticate API requests.
+ */
+
 const TOKEN_BYTES = 32;
 
 /** Hash a raw session token for storage. We never store the raw token. */

@@ -19,6 +19,18 @@ const envSchema = z.object({
     .enum(['0', '1', 'true', 'false'])
     .optional()
     .transform((v) => v === '1' || v === 'true'),
+  // Neon Auth (replaces the internal bcrypt+sessions auth). Both must be set
+  // together for Neon Auth to be active; partial config leaves auth "disabled"
+  // (protected endpoints return 401) rather than crashing the app. Empty
+  // strings are treated as unset so a `.env` placeholder can't break boot.
+  NEON_AUTH_BASE_URL: z.preprocess(
+    (v) => (typeof v === 'string' && v.length === 0 ? undefined : v),
+    z.string().url().optional(),
+  ),
+  NEON_AUTH_COOKIE_SECRET: z.preprocess(
+    (v) => (typeof v === 'string' && v.length === 0 ? undefined : v),
+    z.string().min(32).optional(),
+  ),
 });
 
 export type Env = z.infer<typeof envSchema>;

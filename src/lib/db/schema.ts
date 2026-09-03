@@ -84,7 +84,10 @@ export const accounts = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     email: text('email').notNull(),
-    passwordHash: text('password_hash').notNull(),
+    // Nullable when the account is provisioned via Neon Auth (identity handled
+    // by the external provider); still populated if the account was created by
+    // the legacy migration/seed path.
+    passwordHash: text('password_hash'),
     role: accountRole('role').notNull(),
     displayName: text('display_name'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
